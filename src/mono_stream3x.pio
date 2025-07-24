@@ -1,0 +1,32 @@
+; Monochrome video streamer with 3x horizontal scaling
+; Outputs 8-bit grayscale pixels to 8-bit R2R DAC
+; 
+; Clock: 8.06 MHz (3x GB pixel rate)
+; Line structure (512 pixels total @ 63.5µs):
+;   |--left border--|--active pixels--|--right border--|
+;        4 pixels       480 pixels        28 pixels
+;
+; Pixel values:
+;   Blank/border: 0x58 (0.34V - NTSC black level)
+;   Active: 0x00-0xFF from DMA
+.program mono_stream3x
+.define L  4
+.define P  160
+.define LN 512
+.wrap_target
+    set y, 11          ; blank level (0x58 >> 3 = 11, using 5 MSBs)
+    set x, 3           ; left border (L-1 = 4-1 = 3)
+lb: mov pins, y        ; output blank level
+    jmp x--, lb
+    ; Pull pixel count from FIFO (will be set to 159 in init code)
+    pull               ; get pixel count into OSR
+    mov x, osr         ; move to X for counting
+px: pull
+    out pins, 8
+    out pins, 8
+    out pins, 8
+    jmp x--, px
+    set x, 27          ; right border (LN-(L+P*3)-1 = 512-(4+160*3)-1 = 27)
+rb: mov pins, y        ; output blank level (Y still contains blank value)
+    jmp x--, rb
+.wrap

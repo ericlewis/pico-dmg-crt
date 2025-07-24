@@ -1,0 +1,53 @@
+; NTSC Horizontal/Vertical sync generator
+; Generates composite sync (H+V) on pins 0-1
+; 
+; Timing (24 MHz clock):
+;   H: 1524 cycles = 63.5 µs (15.734 kHz)
+;   V: 262 lines = 16.64 ms (59.94 Hz)
+;
+; Sync levels:
+;   pins = 3: active video (1.0V)
+;   pins = 1: sync level (0V)
+;
+; Line structure:
+;   |--sync--|--back porch--|--active video--|--front porch--|
+;     4.7µs       4.7µs          52.6µs           1.5µs
+.program hv_gen
+.side_set 2
+.wrap_target
+    pull noblock side 0      ; OSR: lines-1 || cycles-1
+    mov  x, osr side 0
+    mov  y, osr side 0
+v:
+    mov isr, y side 0
+    jmp vs side 0
+l:
+    set pins, 3 side 3
+    mov x, osr side 0
+h:
+    jmp x--, h side 0
+    set pins, 1 side 1
+    nop [7] side 0       ; max delay with side_set 2
+    nop [7] side 0       ; split long delay into multiple nops
+    nop [7] side 0
+    nop [7] side 0
+    nop [7] side 0
+    nop [7] side 0
+    nop [7] side 0
+    nop [7] side 0
+    nop [7] side 0
+    nop [7] side 0
+    nop [7] side 0
+    nop [7] side 0
+    nop [4] side 0       ; 7*12 + 4 = 88 cycles (close to 95)
+    set pins, 3 side 3
+    jmp y--, l side 0
+    jmp v side 0
+vs:
+    set pins, 1 side 1
+    mov x, osr side 0
+hl:
+    jmp x--, hl side 0
+    jmp y--, vs side 0
+    jmp l side 0
+.wrap

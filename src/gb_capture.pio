@@ -1,0 +1,28 @@
+; Game Boy pixel capture with sync handling
+; Captures 2-bit pixels with VSYNC/HSYNC synchronization
+; Handles hsync issue where sprites linger on X0 column
+;
+; PIN 0: D0 (pixel data bit 0)
+; PIN 1: D1 (pixel data bit 1)
+; PIN 2: VSYNC
+; PIN 3: HSYNC
+; PIN 4: CLOCK (pixel clock ~4.19 MHz)
+.program gb_capture
+
+set x, 1                ; Used to set hsync high in output
+
+.wrap_target
+loop:
+    wait 1 pin 4        ; Wait for clock high
+    jmp pin, hsync      ; If HSYNC is high, handle it specially
+    wait 0 pin 4        ; Wait for clock low (falling edge)
+    
+    in pins, 4          ; Capture D0, D1, VSYNC, HSYNC
+    jmp loop            ; Continue capturing
+
+hsync:
+    wait 0 pin 3        ; Wait for HSYNC to go low
+    in pins, 3          ; Capture only D0, D1, VSYNC
+    in x, 1             ; Manually set HSYNC high in output
+    jmp loop            ; Back to main loop
+.wrap
