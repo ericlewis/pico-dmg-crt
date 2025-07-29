@@ -61,6 +61,7 @@ target_link_libraries(${PROJECT_NAME}
     pico_multicore
     pico_double
     pico_float
+    m
 )
 
 # Enable stdio output only for Debug builds

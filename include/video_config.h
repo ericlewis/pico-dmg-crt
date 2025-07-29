@@ -34,8 +34,4 @@
 // Line width in bytes (must be power of 2 for DMA alignment)
 #define LINE_BYTES 512
 
-// SWD debug pins
-#define PICO_DEFAULT_SWCLK_PIN 24
-#define PICO_DEFAULT_SWDIO_PIN 25
-
 #endif // VIDEO_CONFIG_H

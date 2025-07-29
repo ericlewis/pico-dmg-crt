@@ -20,6 +20,9 @@
 #define USE_STDIO 0
 #endif
 
+// LED pin for startup indicator - using Pico's built-in LED on GPIO 25
+#define LED_PIN 25
+
 // Global buffers and state variables
 static volatile uint8_t  __attribute__((aligned(64))) fb[LINE_BYTES*OUT_H];  // Single framebuffer
 
@@ -34,6 +37,20 @@ static void core1_entry(void) {
     }
 }
 
+static void flash_led(uint pin, uint count, uint delay_ms) {
+    gpio_init(pin);
+    gpio_set_dir(pin, GPIO_OUT);
+    gpio_set_function(pin, GPIO_FUNC_SIO);  // Ensure pin is in SIO mode, not SWD
+    sleep_ms(10);  // Small delay to ensure pin is ready
+    
+    for (uint i = 0; i < count; i++) {
+        gpio_put(pin, 1);
+        sleep_ms(delay_ms);
+        gpio_put(pin, 0);
+        sleep_ms(delay_ms);
+    }
+}
+
 int main(void){
     // Optimize voltage for 133 MHz operation
     vreg_set_voltage(VREG_VOLTAGE_1_10);
@@ -43,6 +60,9 @@ int main(void){
 #if USE_STDIO
     stdio_init_all();
 #endif
+    
+    // Flash LED 3 times on startup (do this before any clock gating)
+    flash_led(LED_PIN, 3, 500);  // Increased to 500ms for better visibility
     
     // Set DMA high priority for capture and video channels
     hw_set_bits(&dma_hw->ch[CAP_DMA_CH].ctrl_trig, DMA_CH0_CTRL_TRIG_HIGH_PRIORITY_BITS);
@@ -71,8 +91,8 @@ int main(void){
         // DAC output pins (8 pins)
         DAC_PIN_BASE, DAC_PIN_BASE + 1, DAC_PIN_BASE + 2, DAC_PIN_BASE + 3,
         DAC_PIN_BASE + 4, DAC_PIN_BASE + 5, DAC_PIN_BASE + 6, DAC_PIN_BASE + 7,
-        // SWD debug pins - always preserve these
-        PICO_DEFAULT_SWCLK_PIN, PICO_DEFAULT_SWDIO_PIN
+        // LED indicator pin
+        LED_PIN
     };
     
     // Disable pull-ups/pull-downs on all pins except those used
